@@ -54,6 +54,8 @@
     }
   </style>
 
+  <script src="https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1/dist/xrextras.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
     async
     crossorigin="anonymous"
@@ -226,6 +228,7 @@
             XR8.GlTextureRenderer.pipelineModule(),
             XR8.Threejs.pipelineModule(),
             XR8.XrController.pipelineModule(),
+            XRExtras.FullWindowCanvas.pipelineModule(),
 
             initScenePipelineModule()
 
