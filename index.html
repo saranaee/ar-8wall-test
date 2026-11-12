@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>8th Wall AR Test</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    #startButton {
+      position: fixed;
+      z-index: 10;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 15px 25px;
+      font-size: 17px;
+      border: 0;
+      border-radius: 8px;
+    }
+
+    #status {
+      position: fixed;
+      z-index: 10;
+      top: 20px;
+      left: 0;
+      width: 100%;
+      color: white;
+      text-align: center;
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    #camerafeed {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #video {
+      display: none;
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js"
+    async
+    crossorigin="anonymous"
+    data-preload-chunks="slam">
+  </script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <button id="startButton">Start AR</button>
+  <div id="status">Ready</div>
+
+  <canvas id="camerafeed"></canvas>
+
+  <video
+    id="video"
+    src="video.mp4"
+    loop
+    muted
+    playsinline
+    webkit-playsinline>
+  </video>
+
+  <script type="module">
+
+    import * as THREE from "three";
+
+    window.THREE = THREE;
+
+    const video = document.querySelector("#video");
+    const button = document.querySelector("#startButton");
+    const status = document.querySelector("#status");
+    const canvas = document.querySelector("#camerafeed");
+
+    let videoPlane;
+    let scene;
+
+    const updateTarget = ({ detail }) => {
+
+      if (!videoPlane) return;
+
+      videoPlane.position.set(
+        detail.position.x,
+        detail.position.y,
+        detail.position.z
+      );
+
+      videoPlane.quaternion.set(
+        detail.rotation.x,
+        detail.rotation.y,
+        detail.rotation.z,
+        detail.rotation.w
+      );
+
+      const width = detail.scaledWidth || 1.1;
+      const height = detail.scaledHeight || 1.58;
+
+      videoPlane.geometry.dispose();
+      videoPlane.geometry = new THREE.PlaneGeometry(width, height);
+
+      videoPlane.visible = true;
+
+      video.play().catch(error => {
+        console.log("Video playback:", error);
+      });
+
+      status.textContent = "Target detected";
+    };
+
+    const targetLost = () => {
+
+      if (videoPlane) {
+        videoPlane.visible = false;
+      }
+
+      video.pause();
+      status.textContent = "Searching for target...";
+    };
+
+    const initScenePipelineModule = () => {
+
+      return {
+
+        name: "ar-scene",
+
+        onStart: () => {
+
+          const xrScene = XR8.Threejs.xrScene();
+          scene = xrScene.scene;
+
+          const videoTexture = new THREE.VideoTexture(video);
+          videoTexture.colorSpace = THREE.SRGBColorSpace;
+          videoTexture.minFilter = THREE.LinearFilter;
+          videoTexture.magFilter = THREE.LinearFilter;
+          videoTexture.generateMipmaps = false;
+
+          const material = new THREE.MeshBasicMaterial({
+            map: videoTexture,
+            side: THREE.DoubleSide
+          });
+
+          videoPlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.1, 1.58),
+            material
+          );
+
+          videoPlane.visible = false;
+          scene.add(videoPlane);
+
+        },
+
+        listeners: [
+          {
+            event: "reality.imagefound",
+            process: updateTarget
+          },
+          {
+            event: "reality.imageupdated",
+            process: updateTarget
+          },
+          {
+            event: "reality.imagelost",
+            process: targetLost
+          }
+        ]
+
+      };
+
+    };
+
+    const startAR = async () => {
+
+      button.disabled = true;
+      status.textContent = "Loading target...";
+
+      try {
+
+        const response = await fetch(
+          "./image-targets/imageTargetData.json"
+        );
+
+        if (!response.ok) {
+          throw new Error("Could not load target JSON");
+        }
+
+        const targetData = await response.json();
+
+        targetData.imagePath =
+          "./image-targets/imageTargetData_luminance.png";
+
+        const onXRLoaded = () => {
+
+          const XR8 = window.XR8;
+
+          XR8.XrController.configure({
+            disableWorldTracking: true,
+            imageTargetData: [targetData]
+          });
+
+          XR8.addCameraPipelineModules([
+
+            XR8.GlTextureRenderer.pipelineModule(),
+            XR8.Threejs.pipelineModule(),
+            XR8.XrController.pipelineModule(),
+
+            initScenePipelineModule()
+
+          ]);
+
+          XR8.run({
+            canvas: canvas,
+            allowedDevices: XR8.XrConfig.device().ANY
+          });
+
+          status.textContent = "Point camera at your card";
+
+        };
+
+        if (window.XR8) {
+          onXRLoaded();
+        } else {
+          window.addEventListener("xrloaded", onXRLoaded, {
+            once: true
+          });
+        }
+
+      } catch (error) {
+
+        console.error(error);
+        status.textContent = "Error: " + error.message;
+        button.disabled = false;
+
+      }
+
+    };
+
+    button.addEventListener("click", startAR);
+
+  </script>
+
+</body>
+</html>
