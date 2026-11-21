@@ -52,6 +52,18 @@
     #video {
       display: none;
     }
+
+    #cameraInfo {
+      position: fixed;
+      z-index: 20;
+      bottom: 20px;
+      left: 10px;
+      color: white;
+      background: rgba(0,0,0,0.7);
+      padding: 10px;
+      font-size: 12px;
+      pointer-events: none;
+     }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1/dist/xrextras.js"></script>
@@ -75,6 +87,7 @@
 
   <button id="startButton">Start AR</button>
   <div id="status">Ready</div>
+  <div id="cameraInfo"></div>
 
   <canvas id="camerafeed"></canvas>
 
@@ -97,6 +110,7 @@
     const button = document.querySelector("#startButton");
     const status = document.querySelector("#status");
     const canvas = document.querySelector("#camerafeed");
+    const cameraInfo = document.querySelector("#cameraInfo");
 
     let videoPlane;
     let scene;
@@ -145,6 +159,21 @@
     };
 
     const initScenePipelineModule = () => {
+      
+      const cameraInfoModule = {
+        name: "camera-info",
+
+        onVideoSizeChange: ({
+          videoWidth,
+          videoHeight,
+          canvasWidth,
+          canvasHeight
+        }) => {
+          cameraInfo.textContent =
+            `Camera: ${videoWidth} × ${videoHeight} | ` +
+            `Canvas: ${canvasWidth} × ${canvasHeight}`;
+        }
+      };
 
       return {
 
@@ -231,6 +260,7 @@
             XR8.Threejs.pipelineModule(),
             XR8.XrController.pipelineModule(),
             XRExtras.FullWindowCanvas.pipelineModule(),
+            cameraInfoModule,
 
             initScenePipelineModule()
 
