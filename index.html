@@ -118,8 +118,9 @@
         detail.rotation.w
       );
 
-      const width = detail.scaledWidth || 1.1;
-      const height = detail.scaledHeight || 1.58;
+      const scale = 0.95;
+      const width = (detail.scaledWidth || 1.1) * scale;
+      const height = (detail.scaledHeight || 1.58) * scale;
 
       videoPlane.geometry.dispose();
       videoPlane.geometry = new THREE.PlaneGeometry(width, height);
