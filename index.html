@@ -114,14 +114,33 @@
     const cameraInfoModule = {
       name: "camera-info",
 
+      onAttach: ({
+        videoWidth,
+        videoHeight,
+        canvasWidth,
+        canvasHeight,
+        stream
+      }) => {
+
+        const track = stream?.getVideoTracks()[0];
+        const settings = track?.getSettings();
+
+        cameraInfo.textContent =
+          `Camera: ${videoWidth} × ${videoHeight}\n` +
+          `Canvas: ${canvasWidth} × ${canvasHeight}\n` +
+          `Track: ${settings?.width} × ${settings?.height}\n` +
+          `Facing: ${settings?.facingMode || "Unknown"}`;
+      },
+
       onVideoSizeChange: ({
         videoWidth,
         videoHeight,
         canvasWidth,
         canvasHeight
       }) => {
+
         cameraInfo.textContent =
-          `Camera: ${videoWidth} × ${videoHeight} | ` +
+          `Camera: ${videoWidth} × ${videoHeight}\n` +
           `Canvas: ${canvasWidth} × ${canvasHeight}`;
       }
     };
