@@ -137,18 +137,37 @@
       name: "camera-info",
 
       onAttach: (data) => {
-
         const track = data.stream?.getVideoTracks()[0];
 
         cameraSettings = track?.getSettings?.() || {};
         cameraCapabilities = track?.getCapabilities?.() || {};
 
-        showCameraInfo(data);
-      },
+        const isSamsung = /SM-[A-Z0-9]+/i.test(navigator.userAgent);
 
-      onVideoSizeChange: (data) => {
+        if (
+            isSamsung &&
+            track &&
+            cameraCapabilities.zoom &&
+            cameraCapabilities.zoom.max >= 1.15
+        ) {
+            const currentConstraints = track.getConstraints();
+
+            track.applyConstraints({
+                ...currentConstraints,
+                advanced: [
+                    ...(currentConstraints.advanced || []),
+                    { zoom: 1.15 }
+                ]
+            }).then(() => {
+                cameraSettings = track.getSettings();
+                showCameraInfo(data);
+            }).catch(error => {
+                console.log("Zoom error:", error);
+            });
+        }
+
         showCameraInfo(data);
-      }
+    },
     };
 
     let videoPlane;
