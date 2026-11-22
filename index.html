@@ -175,119 +175,122 @@
     let videoPlane;
     let scene;
 
+    let model = null;
+    let mixer = null;
+    let animationClock = new THREE.Clock();
+    let modelBaseScale = new THREE.Vector3(1, 1, 1);
+
     const updateTarget = ({ detail }) => {
 
-      if (!videoPlane) return;
+        if (!model) return;
 
-      videoPlane.position.set(
-        detail.position.x,
-        detail.position.y,
-        detail.position.z
-      );
+        model.position.set(
+                detail.position.x,
+                detail.position.y,
+                detail.position.z
+        );
 
-      videoPlane.quaternion.set(
-        detail.rotation.x,
-        detail.rotation.y,
-        detail.rotation.z,
-        detail.rotation.w
-      );
+        model.quaternion.set(
+                detail.rotation.x,
+                detail.rotation.y,
+                detail.rotation.z,
+                detail.rotation.w
+        );
 
-      const scale = 0.95;
-      const width = (detail.scaledWidth || 1.1) * scale;
-      const height = (detail.scaledHeight || 1.58) * scale;
+        model.scale.copy(modelBaseScale).multiplyScalar(detail.scale);
 
-      videoPlane.geometry.dispose();
-      videoPlane.geometry = new THREE.PlaneGeometry(width, height);
+        model.visible = true;
 
-      videoPlane.visible = true;
-
-      video.play().catch(error => {
-        console.log("Video playback:", error);
-      });
-
-      status.textContent = "Target detected";
+        status.textContent = "Image target detected";
     };
 
     const targetLost = () => {
 
-      if (videoPlane) {
-        videoPlane.visible = false;
-      }
+        if (model) {
+                model.visible = false;
+        }
 
-      video.pause();
-      status.textContent = "Searching for target...";
+        status.textContent = "Searching for target...";
     };
 
-    
     const initScenePipelineModule = () => {
-
-        let model;
-        let mixer;
-        let clock = new THREE.Clock();
 
         const loader = new GLTFLoader();
 
         return {
 
-            name: "ar-scene",
+                name: "ar-scene",
 
-            onStart: () => {
+                onStart: () => {
 
-                const xrScene = XR8.Threejs.xrScene();
-                scene = xrScene.scene;
+                        const xrScene = XR8.Threejs.xrScene();
+                        scene = xrScene.scene;
 
-                loader.load(
-                    "model.glb",
+                        loader.load(
 
-                    (gltf) => {
+                                "model.glb",
 
-                        model = gltf.scene;
+                                (gltf) => {
 
-                        mixer = new THREE.AnimationMixer(model);
+                                        model = gltf.scene;
 
-                        gltf.animations.forEach((clip) => {
-                            mixer.clipAction(clip).play();
-                        });
+                                        modelBaseScale.copy(model.scale);
 
-                        model.visible = false;
+                                        mixer = new THREE.AnimationMixer(model);
 
-                        scene.add(model);
+                                        gltf.animations.forEach((clip) => {
+                                                mixer.clipAction(clip).play();
+                                        });
 
-                    },
+                                        model.visible = false;
 
-                    undefined,
+                                        scene.add(model);
 
-                    (error) => {
-                        console.error("GLB loading error:", error);
-                    }
-                );
+                                        status.textContent = "Model loaded. Scan the target.";
 
-            },
+                                },
 
-            onUpdate: () => {
+                                undefined,
 
-                const delta = clock.getDelta();
+                                (error) => {
 
-                if (mixer && model?.visible) {
-                    mixer.update(delta);
-                }
+                                        console.error("GLB loading error:", error);
+                                        status.textContent = "Model loading failed";
 
-            },
+                                }
 
-            listeners: [
-                {
-                    event: "reality.imagefound",
-                    process: updateTarget
+                        );
+
                 },
-                {
-                    event: "reality.imageupdated",
-                    process: updateTarget
+
+                onUpdate: () => {
+
+                        const delta = animationClock.getDelta();
+
+                        if (mixer && model && model.visible) {
+                                mixer.update(delta);
+                        }
+
                 },
-                {
-                    event: "reality.imagelost",
-                    process: targetLost
-                }
-            ]
+
+                listeners: [
+
+                        {
+                                event: "reality.imagefound",
+                                process: updateTarget
+                        },
+
+                        {
+                                event: "reality.imageupdated",
+                                process: updateTarget
+                        },
+
+                        {
+                                event: "reality.imagelost",
+                                process: targetLost
+                        }
+
+                ]
 
         };
 
