@@ -111,53 +111,43 @@
     const status = document.querySelector("#status");
     const canvas = document.querySelector("#camerafeed");
     const cameraInfo = document.querySelector("#cameraInfo");
+    let cameraSettings = null;
+    let cameraCapabilities = null;
+
+    const showCameraInfo = ({
+      videoWidth,
+      videoHeight,
+      canvasWidth,
+      canvasHeight
+    }) => {
+
+      const zoom = cameraCapabilities?.zoom;
+
+      cameraInfo.textContent =
+        `Camera: ${videoWidth} x ${videoHeight} | ` +
+        `Canvas: ${canvas.width} x ${canvas.height} | ` +
+        `Display: ${canvas.clientWidth} x ${canvas.clientHeight} | ` +
+        `Track: ${cameraSettings?.width ?? "N/A"} x ${cameraSettings?.height ?? "N/A"} | ` +
+        `Facing: ${cameraSettings?.facingMode || "Unknown"} | ` +
+        `Zoom range: ${zoom ? zoom.min + " - " + zoom.max : "Not supported"} | ` +
+        `Current zoom: ${cameraSettings?.zoom ?? "N/A"}`;
+    };
+
     const cameraInfoModule = {
       name: "camera-info",
 
-      onAttach: ({
-        videoWidth,
-        videoHeight,
-        canvasWidth,
-        canvasHeight,
-        stream
-      }) => {
+      onAttach: (data) => {
 
-        const track = stream?.getVideoTracks()[0];
-        const settings = track?.getSettings();
-       
-        const capabilities = track?.getCapabilities();
+        const track = data.stream?.getVideoTracks()[0];
 
-        cameraInfo.textContent =
-          `Camera: ${videoWidth} × ${videoHeight}\n` +
-          `Canvas: ${canvas.width} × ${canvas.height} | ` +
-          `Display: ${canvas.clientWidth} × ${canvas.clientHeight}\n` +
-          `Track: ${settings?.width} × ${settings?.height}\n` +
-          `Facing: ${settings?.facingMode || "Unknown"}`;
+        cameraSettings = track?.getSettings?.() || {};
+        cameraCapabilities = track?.getCapabilities?.() || {};
 
-          `Zoom range: ${capabilities?.zoom?.min} - ${capabilities?.zoom?.max}\n` +
-          `Current zoom: ${settings?.zoom ?? "N/A"}`;
-         
-          `Aspect: ${settings?.aspectRatio}\n` +
-          `Zoom: ${settings?.zoom || "N/A"}\n` +
-          `Label: ${track?.label || "Unknown"}`;
+        showCameraInfo(data);
       },
 
-      onVideoSizeChange: ({
-        videoWidth,
-        videoHeight,
-        canvasWidth,
-        canvasHeight
-      }) => {
-
-        cameraInfo.textContent =
-         `Camera: ${videoWidth} × ${videoHeight}\n` +
-         `Canvas: ${canvasWidth} × ${canvasHeight}\n` +
-         `Track: ${settings?.width} × ${settings?.height}\n` +
-         `Facing: ${settings?.facingMode || "Unknown"}\n` +
-         `Zoom range: ${capabilities?.zoom
-          ? capabilities.zoom.min + " - " + capabilities.zoom.max
-          : "Not supported"}\n` +
-        `Current zoom: ${settings?.zoom ?? "N/A"}`;
+      onVideoSizeChange: (data) => {
+        showCameraInfo(data);
       }
     };
 
