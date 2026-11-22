@@ -124,6 +124,8 @@
 
         const track = stream?.getVideoTracks()[0];
         const settings = track?.getSettings();
+       
+        const capabilities = track?.getCapabilities();
 
         cameraInfo.textContent =
           `Camera: ${videoWidth} × ${videoHeight}\n` +
@@ -131,6 +133,10 @@
           `Display: ${canvas.clientWidth} × ${canvas.clientHeight}\n` +
           `Track: ${settings?.width} × ${settings?.height}\n` +
           `Facing: ${settings?.facingMode || "Unknown"}`;
+         
+          `Aspect: ${settings?.aspectRatio}\n` +
+          `Zoom: ${settings?.zoom || "N/A"}\n` +
+          `Label: ${track?.label || "Unknown"}`;
       },
 
       onVideoSizeChange: ({
