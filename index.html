@@ -127,7 +127,8 @@
 
         cameraInfo.textContent =
           `Camera: ${videoWidth} × ${videoHeight}\n` +
-          `Canvas: ${canvasWidth} × ${canvasHeight}\n` +
+          `Canvas: ${canvas.width} × ${canvas.height} | ` +
+          `Display: ${canvas.clientWidth} × ${canvas.clientHeight}\n` +
           `Track: ${settings?.width} × ${settings?.height}\n` +
           `Facing: ${settings?.facingMode || "Unknown"}`;
       },
