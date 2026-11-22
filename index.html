@@ -133,6 +133,9 @@
           `Display: ${canvas.clientWidth} × ${canvas.clientHeight}\n` +
           `Track: ${settings?.width} × ${settings?.height}\n` +
           `Facing: ${settings?.facingMode || "Unknown"}`;
+
+          `Zoom range: ${capabilities?.zoom?.min} - ${capabilities?.zoom?.max}\n` +
+          `Current zoom: ${settings?.zoom ?? "N/A"}`;
          
           `Aspect: ${settings?.aspectRatio}\n` +
           `Zoom: ${settings?.zoom || "N/A"}\n` +
