@@ -162,7 +162,7 @@
                 cameraSettings = track.getSettings();
                 showCameraInfo(data);
             }).catch(error => {
-                console.log("Zoom error:", error);
+                cameraInfo.textContent += " | Zoom error: " + error.name + " - " + error.message;
             });
         }
 
