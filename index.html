@@ -176,31 +176,33 @@
     let scene;
 
     let model = null;
+    let targetRoot = null;
     let mixer = null;
     let animationClock = new THREE.Clock();
-    let modelBaseScale = new THREE.Vector3(1, 1, 1);
 
+    let modelScaleFactor = 1;
+    let modelBottomOffset = 0;
     
     const updateTarget = ({ detail }) => {
 
-        if (!model) return;
+        if (!targetRoot) return;
 
-        model.position.set(
+        targetRoot.position.set(
                 detail.position.x,
                 detail.position.y,
                 detail.position.z
         );
 
-        model.quaternion.set(
+        targetRoot.quaternion.set(
                 detail.rotation.x,
                 detail.rotation.y,
                 detail.rotation.z,
                 detail.rotation.w
         );
 
-        model.scale.copy(modelBaseScale).multiplyScalar(detail.scale * 0.1);
+        targetRoot.scale.setScalar(detail.scale);
 
-        model.visible = true;
+        targetRoot.visible = true;
 
         status.textContent = "Image target detected";
     };
@@ -239,21 +241,30 @@
 
                                 (gltf) => {
 
+                                        targetRoot = new THREE.Group();
+
                                         model = gltf.scene;
 
                                         const box = new THREE.Box3().setFromObject(model);
                                         const size = box.getSize(new THREE.Vector3());
 
-                                        console.log("Model dimensions:", size);
-                                        console.log("Model center:", box.getCenter(new THREE.Vector3()));
-                                  
-                                        const targetWidth = 1;
+                                        const targetWidth = 0.25;
 
-                                        const scaleFactor = targetWidth / size.x;
+                                        modelScaleFactor = targetWidth / size.y;
 
-                                        model.scale.setScalar(scaleFactor);
+                                        modelBottomOffset = -box.min.y * modelScaleFactor;
 
-                                        modelBaseScale.copy(model.scale);
+                                        model.scale.setScalar(modelScaleFactor);
+
+                                        model.rotation.x = Math.PI / 2;
+
+                                        model.position.z = modelBottomOffset;
+
+                                        targetRoot.add(model);
+
+                                        scene.add(targetRoot);
+
+                                        targetRoot.visible = false;
 
                                         mixer = new THREE.AnimationMixer(model);
 
@@ -261,13 +272,20 @@
                                                 mixer.clipAction(clip).play();
                                         });
 
-                                        model.visible = false;
-
-                                        scene.add(model);
-
                                         status.textContent = "Model loaded. Scan the target.";
 
                                 },
+
+                                undefined,
+
+                                (error) => {
+
+                                        console.error("GLB loading error:", error);
+                                        status.textContent = "Model loading failed";
+
+                                }
+
+                        );
 
                                 undefined,
 
