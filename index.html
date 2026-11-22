@@ -150,8 +150,14 @@
       }) => {
 
         cameraInfo.textContent =
-          `Camera: ${videoWidth} × ${videoHeight}\n` +
-          `Canvas: ${canvasWidth} × ${canvasHeight}`;
+         `Camera: ${videoWidth} × ${videoHeight}\n` +
+         `Canvas: ${canvasWidth} × ${canvasHeight}\n` +
+         `Track: ${settings?.width} × ${settings?.height}\n` +
+         `Facing: ${settings?.facingMode || "Unknown"}\n` +
+         `Zoom range: ${capabilities?.zoom
+          ? capabilities.zoom.min + " - " + capabilities.zoom.max
+          : "Not supported"}\n` +
+        `Current zoom: ${settings?.zoom ?? "N/A"}`;
       }
     };
 
