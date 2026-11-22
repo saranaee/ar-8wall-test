@@ -103,6 +103,7 @@
   <script type="module">
 
     import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
     window.THREE = THREE;
 
@@ -216,56 +217,81 @@
       status.textContent = "Searching for target...";
     };
 
+    
     const initScenePipelineModule = () => {
 
-      return {
+        let model;
+        let mixer;
+        let clock = new THREE.Clock();
 
-        name: "ar-scene",
+        const loader = new GLTFLoader();
 
-        onStart: () => {
+        return {
 
-          const xrScene = XR8.Threejs.xrScene();
-          scene = xrScene.scene;
+            name: "ar-scene",
 
-          const videoTexture = new THREE.VideoTexture(video);
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture.magFilter = THREE.LinearFilter;
-          videoTexture.generateMipmaps = false;
+            onStart: () => {
 
-          const material = new THREE.MeshBasicMaterial({
-            map: videoTexture,
-            side: THREE.DoubleSide
-          });
+                const xrScene = XR8.Threejs.xrScene();
+                scene = xrScene.scene;
 
-          videoPlane = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.1, 1.58),
-            material
-          );
+                loader.load(
+                    "model.glb",
 
-          videoPlane.visible = false;
-          scene.add(videoPlane);
+                    (gltf) => {
 
-        },
+                        model = gltf.scene;
 
-        listeners: [
-          {
-            event: "reality.imagefound",
-            process: updateTarget
-          },
-          {
-            event: "reality.imageupdated",
-            process: updateTarget
-          },
-          {
-            event: "reality.imagelost",
-            process: targetLost
-          }
-        ]
+                        mixer = new THREE.AnimationMixer(model);
 
-      };
+                        gltf.animations.forEach((clip) => {
+                            mixer.clipAction(clip).play();
+                        });
+
+                        model.visible = false;
+
+                        scene.add(model);
+
+                    },
+
+                    undefined,
+
+                    (error) => {
+                        console.error("GLB loading error:", error);
+                    }
+                );
+
+            },
+
+            onUpdate: () => {
+
+                const delta = clock.getDelta();
+
+                if (mixer && model?.visible) {
+                    mixer.update(delta);
+                }
+
+            },
+
+            listeners: [
+                {
+                    event: "reality.imagefound",
+                    process: updateTarget
+                },
+                {
+                    event: "reality.imageupdated",
+                    process: updateTarget
+                },
+                {
+                    event: "reality.imagelost",
+                    process: targetLost
+                }
+            ]
+
+        };
 
     };
+
 
     const startAR = async () => {
 
